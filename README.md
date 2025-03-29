@@ -1,13 +1,13 @@
-# formdata-to-string
+# formdata-to-string-frontend
 
 Transform a [FormData](https://developer.mozilla.org/en-US/docs/Web/API/FormData) instance into a raw string.
 
-[![Build](https://github.com/readmeio/formdata-to-string/workflows/CI/badge.svg)](https://github.com/readmeio/formdata-to-string/) [![](https://img.shields.io/npm/v/formdata-to-string)](https://npm.im/formdata-to-string)
+[![Build](https://github.com/frostby/formdata-to-string/workflows/CI/badge.svg)](https://github.com/frostby/formdata-to-string/) [![](https://img.shields.io/npm/v/formdata-to-string-frontend)](https://npm.im/formdata-to-string-frontend)
 
 ## Installation
 
 ```sh
-npm install --save formdata-to-string
+npm install --save formdata-to-string-frontend
 ```
 
 ## Usage
@@ -15,8 +15,8 @@ npm install --save formdata-to-string
 This library is built up of internal methods from within Node's internal `fetch` library, [undici](https://github.com/nodejs/undici) for transforming a `FormData` instance into something that can be supplied in a `fetch` request. The purpose of this is to silo the conversion and stream reading aspect of that process so that output can be used in other methods (eg. unit testing, [code snippet generation](https://npm.im/@readme/httpsnippet), etc.).
 
 ```js
-import formDataToString from 'formdata-to-string';
-// const { default: formDataToString } = require('formdata-to-string');
+import formDataToString from 'formdata-to-string-frontend';
+// const { default: formDataToString } = require('formdata-to-string-frontend');
 
 const form = new FormData();
 form.append('dog', 'buster');

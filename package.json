@@ -1,6 +1,6 @@
 {
-  "name": "formdata-to-string",
-  "version": "2.0.2",
+  "name": "formdata-to-string-frontend",
+  "version": "2.0.3",
   "description": "Transform a FormData object into a raw string",
   "license": "ISC",
   "sideEffects": false,
@@ -23,12 +23,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git@github.com:readmeio/formdata-to-string.git"
+    "url": "git@github.com:frostby/formdata-to-string.git"
   },
   "bugs": {
-    "url": "https://github.com/readmeio/formdata-to-string/issues"
+    "url": "https://github.com/frostby/formdata-to-string/issues"
   },
-  "homepage": "https://github.com/readmeio/formdata-to-string#readme",
+  "homepage": "https://github.com/frostby/formdata-to-string#readme",
   "scripts": {
     "attw": "attw --pack --format table-flipped",
     "build": "tsup",
