@@ -1,7 +1,3 @@
-/* eslint-disable no-restricted-syntax */
-import { isErrored as streamIsErrored } from 'node:stream';
-import { inspect } from 'node:util';
-
 interface Options {
   /**
    * A custom boundary to use in your generated FormData string. Will default to an internal
@@ -10,45 +6,12 @@ interface Options {
   boundary?: string;
 }
 
-/**
- * @see {@link https://stackoverflow.com/a/63361543/105698}
- */
-async function streamToString(data) {
-  const chunks = [];
-
-  for await (const chunk of data) {
-    chunks.push(Buffer.from(chunk));
-  }
-
-  return Buffer.concat(chunks).toString('utf-8');
+async function streamToString(stream: ReadableStream<Uint8Array>): Promise<string> {
+  return new Response(stream).text();
 }
 
-/**
- * @license https://github.com/nodejs/undici/blob/e39a6324c4474c6614cac98b8668e3d036aa6b18/LICENSE
- * @see {@link https://github.com/nodejs/undici/blob/e39a6324c4474c6614cac98b8668e3d036aa6b18/lib/core/util.js#L333C1-L339C2}
- */
-function isErrored(body) {
-  return !!(body && (streamIsErrored ? streamIsErrored(body) : /state: 'errored'/.test(inspect(body))));
-}
-
-/**
- * @license https://github.com/nodejs/undici/blob/e39a6324c4474c6614cac98b8668e3d036aa6b18/LICENSE
- * @see {@link https://github.com/nodejs/undici/blob/e39a6324c4474c6614cac98b8668e3d036aa6b18/lib/core/util.js#L279-L282}
- */
-function isBuffer(buffer) {
-  return buffer instanceof Uint8Array || Buffer.isBuffer(buffer);
-}
-
-/**
- * This is a paired down version of the `extractBody` function in `undici` that can convert a
- * `FormData` instance into a stream object that can be easily read out of.
- *
- * @license https://github.com/nodejs/undici/blob/e39a6324c4474c6614cac98b8668e3d036aa6b18/LICENSE
- * @see {@link https://github.com/nodejs/undici/blob/e39a6324c4474c6614cac98b8668e3d036aa6b18/lib/fetch/body.js#L31}
- */
-function extractBody(object, opts?: Options) {
-  let source = null;
-  let length = null;
+function extractBody(object: FormData, opts?: Options) {
+  let length: number | null = 0;
 
   const boundary = opts?.boundary
     ? opts.boundary
@@ -62,10 +25,9 @@ function extractBody(object, opts?: Options) {
   const enc = new TextEncoder();
   const blobParts = [];
   const rn = new Uint8Array([13, 10]); // '\r\n'
-  length = 0;
   let hasUnknownSizeValue = false;
 
-  for (const [name, value] of object) {
+  Array.from(object.entries()).forEach(([name, value]) => {
     if (typeof value === 'string') {
       const chunk = enc.encode(
         `${prefix}; name="${escape(normalizeLinefeeds(name))}"\r\n\r\n${normalizeLinefeeds(value)}\r\n`,
@@ -85,7 +47,7 @@ function extractBody(object, opts?: Options) {
         hasUnknownSizeValue = true;
       }
     }
-  }
+  });
 
   const chunk = enc.encode(`--${boundary}--`);
   blobParts.push(chunk);
@@ -94,11 +56,10 @@ function extractBody(object, opts?: Options) {
     length = null;
   }
 
-  source = object;
-
   // eslint-disable-next-line func-names
   const action = async function* () {
-    for (const part of blobParts) {
+    for (let i = 0; i < blobParts.length; i += 1) {
+      const part = blobParts[i];
       if (part.stream) {
         yield* part.stream();
       } else {
@@ -109,51 +70,36 @@ function extractBody(object, opts?: Options) {
 
   const type = `multipart/form-data; boundary=${boundary}`;
 
-  if (typeof source === 'string' || isBuffer(source)) {
-    length = Buffer.byteLength(source);
-  }
-
-  let iterator;
+  let iterator: AsyncIterableIterator<Uint8Array>;
   const stream = new ReadableStream({
     async start() {
       iterator = action()[Symbol.asyncIterator]();
     },
-    // @ts-expect-error Typings are off but this works.
     async pull(controller) {
       const { value, done } = await iterator.next();
       if (done) {
-        queueMicrotask(() => {
-          controller.close();
-        });
-      } else if (!isErrored(stream)) {
+        queueMicrotask(() => controller.close());
+      } else {
         controller.enqueue(new Uint8Array(value));
       }
-      return controller.desiredSize > 0;
     },
     async cancel() {
       await iterator.return();
     },
-    type: undefined,
   });
 
   return {
     body: {
       stream,
-      source,
       length,
     },
     type,
   };
 }
 
-/**
- * Convert an instance of the `FormData` API into a raw string.
- *
- */
-export default async function formDataToString(form: FormData, opts: Options = {}) {
+export default async function formDataToString(form: FormData, opts: Options = {}): Promise<string> {
   const {
     body: { stream },
-  } = await extractBody(form, opts);
-
+  } = extractBody(form, opts);
   return streamToString(stream);
 }

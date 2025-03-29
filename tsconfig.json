@@ -5,8 +5,8 @@
     "declaration": true,
     "downlevelIteration": true,
     "esModuleInterop": true,
-    "lib": ["DOM", "ES2020"],
     "module": "ESNext",
+    "target": "ES2022",
     "moduleResolution": "Bundler",
 
     // The bulk of this library is code taken from `undici` internals so we aren't going to bother
